@@ -4,7 +4,6 @@ import "sync"
 
 // BroadcastAdaptor is the adaptor to handle broadcasts.
 type BroadcastAdaptor interface {
-
 	// Join causes the socket to join a room.
 	Join(room string, socket Socket) error
 
@@ -13,6 +12,8 @@ type BroadcastAdaptor interface {
 
 	// Send will send an event with args to the room. If "ignore" is not nil, the event will be excluded from being sent to "ignore".
 	Send(ignore Socket, room, event string, args ...interface{}) error
+
+	Find(room, socketId string) (socket Socket, exist bool)
 }
 
 var newBroadcast = newBroadcastDefault
@@ -67,4 +68,16 @@ func (b *broadcast) Send(ignore Socket, room, event string, args ...interface{})
 	}
 	b.RUnlock()
 	return nil
+}
+
+func (b *broadcast) Find(room, socketId string) (socket Socket, exist bool) {
+	if sockets, ok := b.m[room]; ok {
+		if socket, ok = sockets[socketId]; ok {
+			return socket, true
+		} else {
+			return nil, false
+		}
+	} else {
+		return nil, true
+	}
 }

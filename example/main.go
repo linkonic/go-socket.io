@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-
-	"github.com/googollee/go-socket.io"
+	"go-socket.io"
 )
 
 func main() {

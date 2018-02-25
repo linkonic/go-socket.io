@@ -127,6 +127,19 @@ func (h *baseHandler) BroadcastTo(room, event string, args ...interface{}) error
 	return h.broadcast.Send(nil, h.broadcastName(room), event, args...)
 }
 
+func (h *baseHandler) BroadcastToIgnoreId(ignoreSocketId, room, event string, args ...interface{}) error {
+	var (
+		socket Socket
+		ok     bool
+	)
+	socket, ok = h.broadcast.Find(room, ignoreSocketId)
+	if !ok {
+		socket = nil
+	}
+	return h.broadcast.Send(socket, h.broadcastName(room), event, args...)
+
+}
+
 func (h *socketHandler) BroadcastTo(room, event string, args ...interface{}) error {
 	return h.baseHandler.broadcast.Send(h.socket, h.broadcastName(room), event, args...)
 }
@@ -184,7 +197,7 @@ func (h *socketHandler) onPacket(decoder *decoder, packet *packet) ([]interface{
 	var err error
 	if last, ok := retV[len(retV)-1].Interface().(error); ok {
 		err = last
-		retV = retV[0 : len(retV)-1]
+		retV = retV[0: len(retV)-1]
 	}
 	ret := make([]interface{}, len(retV))
 	for i, v := range retV {

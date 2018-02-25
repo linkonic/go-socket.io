@@ -92,6 +92,11 @@ func (s *Server) BroadcastTo(room, message string, args ...interface{}) {
 	s.namespace.BroadcastTo(room, message, args...)
 }
 
+// BroadcastTo is a server level broadcast function.
+func (s *Server) BroadcastToIgnoreId(ignoreSocketId, room, message string, args ...interface{}) {
+	s.namespace.BroadcastToIgnoreId(ignoreSocketId, room, message, args...)
+}
+
 func (s *Server) loop() {
 	for {
 		conn, err := s.eio.Accept()
