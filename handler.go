@@ -132,11 +132,12 @@ func (h *baseHandler) BroadcastToIgnoreId(ignoreSocketId, room, event string, ar
 		socket Socket
 		ok     bool
 	)
-	socket, ok = h.broadcast.Find(room, ignoreSocketId)
+	r := h.broadcastName(room)
+	socket, ok = h.broadcast.Find(r, ignoreSocketId)
 	if !ok {
 		socket = nil
 	}
-	return h.broadcast.Send(socket, h.broadcastName(room), event, args...)
+	return h.broadcast.Send(socket, r, event, args...)
 
 }
 
