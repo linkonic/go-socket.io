@@ -14,14 +14,14 @@ type Namespace interface {
 
 type namespace struct {
 	*baseHandler
-	root   map[string]Namespace
-	logger LogMessage
+	root    map[string]Namespace
+	logFunc LogFunc
 }
 
-func newNamespace(broadcast BroadcastAdaptor, logger LogMessage) *namespace {
+func newNamespace(broadcast BroadcastAdaptor, logFunc LogFunc) *namespace {
 	ret := &namespace{
-		logger:      logger,
-		baseHandler: newBaseHandler("", broadcast, logger),
+		logFunc:     logFunc,
+		baseHandler: newBaseHandler("", broadcast, logFunc),
 		root:        make(map[string]Namespace),
 	}
 	ret.root[ret.Name()] = ret
@@ -40,7 +40,7 @@ func (n *namespace) Of(name string) Namespace {
 		return ret
 	}
 	ret := &namespace{
-		baseHandler: newBaseHandler(name, n.baseHandler.broadcast, n.logger),
+		baseHandler: newBaseHandler(name, n.baseHandler.broadcast, n.logFunc),
 		root:        n.root,
 	}
 	n.root[name] = ret

@@ -2,11 +2,10 @@ package socketio
 
 import (
 	"io"
-	"bufio"
 )
 
 type (
-	LogMessage func(message string, content interface{})
+	LogFunc func(direction string, content interface{})
 
 	SocketBuffer interface {
 		Content() string
@@ -17,62 +16,65 @@ type (
 		SocketBuffer
 		writerDelegate io.WriteCloser
 		buf            []byte
-		size           int
 	}
+
 	readWrapper struct {
-		io.Reader
+		io.ReadCloser
 		SocketBuffer
-		readerDelegate io.Reader
+		readerDelegate io.ReadCloser
 		buf            []byte
-		size           int
 	}
 )
 
-func wrapReader(rd io.Reader) (io.Reader, SocketBuffer) {
+func wrapReader(r io.ReadCloser) (io.ReadCloser, SocketBuffer) {
 
 	reader := &readWrapper{
-		readerDelegate: bufio.NewReader(rd),
+		readerDelegate: r,
 		buf:            []byte{},
-		size:           0,
 	}
 
 	return reader, reader
 }
 
-func wrapWriter(writer io.WriteCloser) (io.WriteCloser, SocketBuffer) {
+func (r *readWrapper) Read(p []byte) (n int, err error) {
+	n, err = r.readerDelegate.Read(p)
+
+	r.buf = append(r.buf, p[0:n]...)
+
+	return n, err
+}
+
+func (r *readWrapper) Close() error {
+	return r.readerDelegate.Close()
+}
+
+func (r *readWrapper) Content() string {
+	return string(r.buf)
+}
+
+func wrapWriter(w io.WriteCloser) (io.WriteCloser, SocketBuffer) {
 
 	wrapper := &writeWrapper{
-		writerDelegate: writer,
+		writerDelegate: w,
 		buf:            []byte{},
-		size:           0,
 	}
 
 	return wrapper, wrapper
 }
 
-func (ww *writeWrapper) Write(p []byte) (n int, err error) {
+func (w *writeWrapper) Write(p []byte) (n int, err error) {
 
-	n, err = ww.writerDelegate.Write(p)
+	n, err = w.writerDelegate.Write(p)
 
-	ww.buf = append(ww.buf, p[0:n]...)
-	ww.size += n
-
-	return n, err
-}
-
-func (l readWrapper) Read(p []byte) (n int, err error) {
-	n, err = l.readerDelegate.Read(p)
-
-	l.buf = append(l.buf, p[0:n]...)
-	l.size += n
+	w.buf = append(w.buf, p[0:n]...)
 
 	return n, err
 }
 
-func (l writeWrapper) Content() string {
-	return string(l.buf[0:l.size])
+func (w *writeWrapper) Close() error {
+	return w.writerDelegate.Close()
 }
 
-func (l readWrapper) Content() string {
-	return string(l.buf[0:l.size])
+func (w *writeWrapper) Content() string {
+	return string(w.buf)
 }

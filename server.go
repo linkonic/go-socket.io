@@ -14,13 +14,13 @@ type Server struct {
 }
 
 // NewServer returns the server supported given transports. If transports is nil, the server will use ["polling", "websocket"] as default.
-func NewServer(transportNames []string, logger LogMessage) (*Server, error) {
+func NewServer(transportNames []string, logFunc LogFunc) (*Server, error) {
 	eio, err := engineio.NewServer(transportNames)
 	if err != nil {
 		return nil, err
 	}
 	ret := &Server{
-		namespace: newNamespace(newBroadcastDefault(), logger),
+		namespace: newNamespace(newBroadcastDefault(), logFunc),
 		eio:       eio,
 	}
 	go ret.loop()
@@ -79,7 +79,7 @@ func (s *Server) SetSessionManager(sessions engineio.Sessions) {
 
 // SetAdaptor sets the adaptor of broadcast. Default is an in-process broadcast implementation.
 func (s *Server) SetAdaptor(adaptor BroadcastAdaptor) {
-	s.namespace = newNamespace(adaptor, s.logger)
+	s.namespace = newNamespace(adaptor, s.logFunc)
 }
 
 // ServeHTTP handles http requests.

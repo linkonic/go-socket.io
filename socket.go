@@ -43,13 +43,13 @@ type socket struct {
 	namespace string
 	id        int
 	mu        sync.Mutex
-	logger    LogMessage
+	logFunc   LogFunc
 }
 
 func newSocket(conn engineio.Conn, base *baseHandler) *socket {
 	ret := &socket{
-		conn:   conn,
-		logger: base.logger,
+		conn:    conn,
+		logFunc: base.logFunc,
 	}
 	ret.socketHandler = newSocketHandler(ret, base)
 	return ret
@@ -84,7 +84,7 @@ func (s *socket) send(args []interface{}) error {
 		NSP:  s.namespace,
 		Data: args,
 	}
-	encoder := newEncoder(s.conn, s.logger)
+	encoder := newEncoder(s.conn, s.logFunc)
 	return encoder.Encode(packet)
 }
 
@@ -94,7 +94,7 @@ func (s *socket) sendConnect() error {
 		Id:   -1,
 		NSP:  s.namespace,
 	}
-	encoder := newEncoder(s.conn, s.logger)
+	encoder := newEncoder(s.conn, s.logFunc)
 	return encoder.Encode(packet)
 }
 
@@ -112,7 +112,7 @@ func (s *socket) sendId(args []interface{}) (int, error) {
 	}
 	s.mu.Unlock()
 
-	encoder := newEncoder(s.conn, s.logger)
+	encoder := newEncoder(s.conn, s.logFunc)
 	err := encoder.Encode(packet)
 	if err != nil {
 		return -1, nil
@@ -134,27 +134,17 @@ func (s *socket) loop() error {
 		Type: _CONNECT,
 		Id:   -1,
 	}
-	encoder := newEncoder(s.conn, s.logger)
+	encoder := newEncoder(s.conn, s.logFunc)
 	if err := encoder.Encode(p); err != nil {
 		return err
 	}
 	s.socketHandler.onPacket(nil, &p)
 	for {
-		decoder := newDecoder(s.conn)
-
-		var buf SocketBuffer
-
-		if s.logger != nil {
-			decoder.current, buf = wrapReader(decoder.current)
-		}
+		decoder := newDecoder(s.conn, s.logFunc)
 
 		var p packet
 		if err := decoder.Decode(&p); err != nil {
 			return err
-		}
-
-		if buf != nil && s.logger != nil {
-			s.logger(">>>"+s.conn.Id()+">>>", buf.Content())
 		}
 
 		ret, err := s.socketHandler.onPacket(decoder, &p)
@@ -175,7 +165,7 @@ func (s *socket) loop() error {
 					NSP:  s.namespace,
 					Data: ret,
 				}
-				encoder := newEncoder(s.conn, s.logger)
+				encoder := newEncoder(s.conn, s.logFunc)
 				if err := encoder.Encode(p); err != nil {
 					return err
 				}

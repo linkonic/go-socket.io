@@ -11,15 +11,15 @@ type baseHandler struct {
 	name      string
 	broadcast BroadcastAdaptor
 	evMu      sync.Mutex
-	logger    LogMessage
+	logFunc   LogFunc
 }
 
-func newBaseHandler(name string, broadcast BroadcastAdaptor, logger LogMessage) *baseHandler {
+func newBaseHandler(name string, broadcast BroadcastAdaptor, logFunc LogFunc) *baseHandler {
 	return &baseHandler{
 		events:    make(map[string]*caller),
 		name:      name,
 		broadcast: broadcast,
-		logger:    logger,
+		logFunc:   logFunc,
 		evMu:      sync.Mutex{},
 	}
 }
@@ -38,11 +38,11 @@ func (h *baseHandler) On(event string, f interface{}) error {
 
 type socketHandler struct {
 	*baseHandler
-	acksmu sync.Mutex
-	acks   map[int]*caller
-	socket *socket
-	logger LogMessage
-	rooms  map[string]struct{}
+	acksmu  sync.Mutex
+	acks    map[int]*caller
+	socket  *socket
+	logFunc LogFunc
+	rooms   map[string]struct{}
 }
 
 func newSocketHandler(s *socket, base *baseHandler) *socketHandler {
@@ -58,10 +58,10 @@ func newSocketHandler(s *socket, base *baseHandler) *socketHandler {
 			broadcast: base.broadcast,
 			evMu:      base.evMu,
 		},
-		acks:   make(map[int]*caller),
-		socket: s,
-		rooms:  make(map[string]struct{}),
-		logger: base.logger,
+		acks:    make(map[int]*caller),
+		socket:  s,
+		rooms:   make(map[string]struct{}),
+		logFunc: base.logFunc,
 	}
 }
 

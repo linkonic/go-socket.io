@@ -47,10 +47,12 @@ func (t packetType) String() string {
 }
 
 type frameReader interface {
+	Id() string
 	NextReader() (engineio.MessageType, io.ReadCloser, error)
 }
 
 type frameWriter interface {
+	Id() string
 	NextWriter(engineio.MessageType) (io.WriteCloser, error)
 }
 
@@ -63,17 +65,17 @@ type packet struct {
 }
 
 type encoder struct {
-	w      frameWriter
-	err    error
-	logger LogMessage
-	id     string
+	w       frameWriter
+	err     error
+	logFunc LogFunc
+	conId   string
 }
 
-func newEncoder(w engineio.Conn, logger LogMessage) *encoder {
+func newEncoder(w engineio.Conn, logFunc LogFunc) *encoder {
 	return &encoder{
-		id:     w.Id(),
-		w:      w,
-		logger: logger,
+		conId:   w.Id(),
+		w:       w,
+		logFunc: logFunc,
 	}
 }
 
@@ -101,11 +103,11 @@ func (e *encoder) encodePacket(v packet) error {
 	}
 	defer writer.Close()
 
-	if e.logger != nil {
+	if e.logFunc != nil {
 		var buf SocketBuffer
 		writer, buf = wrapWriter(writer)
 		defer func() {
-			e.logger("<<<"+e.id+"<<<", buf.Content())
+			e.logFunc("<<<"+e.conId+"<<<", buf.Content())
 		}()
 	}
 
@@ -161,11 +163,15 @@ type decoder struct {
 	message       string
 	current       io.Reader
 	currentCloser io.Closer
+	logFunc       LogFunc
+	conId         string
 }
 
-func newDecoder(r frameReader) *decoder {
+func newDecoder(r frameReader, logFunc LogFunc) *decoder {
 	return &decoder{
-		reader: r,
+		reader:  r,
+		logFunc: logFunc,
+		conId:   r.Id(),
 	}
 }
 
@@ -194,6 +200,15 @@ func (d *decoder) Decode(v *packet) error {
 	if ty != engineio.MessageText {
 		return fmt.Errorf("need text package")
 	}
+
+	if d.logFunc != nil {
+		var buf SocketBuffer
+		r, buf = wrapReader(r)
+		defer func() {
+			d.logFunc(">>>"+d.conId+">>>", buf.Content())
+		}()
+	}
+
 	reader := bufio.NewReader(r)
 
 	v.Id = -1
