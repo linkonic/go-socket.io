@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	server, err := socketio.NewServer(nil)
+	server, err := socketio.NewServer(nil, nil)
 	if err != nil {
 		log.Fatal(err)
 	}

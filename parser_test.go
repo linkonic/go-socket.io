@@ -37,7 +37,7 @@ func TestParser(t *testing.T) {
 
 	test := func() {
 		saver := &FrameSaver{}
-		encoder := newEncoder(saver)
+		encoder := newEncoder(saver, nil)
 		err := encoder.Encode(p)
 		So(err, ShouldBeNil)
 		So(len(saver.data), ShouldBeGreaterThan, 0)

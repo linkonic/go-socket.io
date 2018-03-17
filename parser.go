@@ -17,7 +17,7 @@ const Protocol = 4
 type packetType int
 
 const (
-	_CONNECT packetType = iota
+	_CONNECT      packetType = iota
 	_DISCONNECT
 	_EVENT
 	_ACK
@@ -63,13 +63,17 @@ type packet struct {
 }
 
 type encoder struct {
-	w   frameWriter
-	err error
+	w      frameWriter
+	err    error
+	logger LogMessage
+	id     string
 }
 
-func newEncoder(w frameWriter) *encoder {
+func newEncoder(w engineio.Conn, logger LogMessage) *encoder {
 	return &encoder{
-		w: w,
+		id:     w.Id(),
+		w:      w,
+		logger: logger,
 	}
 }
 
@@ -96,6 +100,14 @@ func (e *encoder) encodePacket(v packet) error {
 		return err
 	}
 	defer writer.Close()
+
+	if e.logger != nil {
+		var buf SocketBuffer
+		writer, buf = wrapWriter(writer)
+		defer func() {
+			e.logger("<<<"+e.id+"<<<", buf.Content())
+		}()
+	}
 
 	w := newTrimWriter(writer, "\n")
 	wh := newWriterHelper(w)

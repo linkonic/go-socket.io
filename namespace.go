@@ -2,7 +2,6 @@ package socketio
 
 // Namespace is the name space of a socket.io handler.
 type Namespace interface {
-
 	// Name returns the name of the namespace.
 	Name() string
 
@@ -15,12 +14,14 @@ type Namespace interface {
 
 type namespace struct {
 	*baseHandler
-	root map[string]Namespace
+	root   map[string]Namespace
+	logger LogMessage
 }
 
-func newNamespace(broadcast BroadcastAdaptor) *namespace {
+func newNamespace(broadcast BroadcastAdaptor, logger LogMessage) *namespace {
 	ret := &namespace{
-		baseHandler: newBaseHandler("", broadcast),
+		logger:      logger,
+		baseHandler: newBaseHandler("", broadcast, logger),
 		root:        make(map[string]Namespace),
 	}
 	ret.root[ret.Name()] = ret
@@ -39,7 +40,7 @@ func (n *namespace) Of(name string) Namespace {
 		return ret
 	}
 	ret := &namespace{
-		baseHandler: newBaseHandler(name, n.baseHandler.broadcast),
+		baseHandler: newBaseHandler(name, n.baseHandler.broadcast, n.logger),
 		root:        n.root,
 	}
 	n.root[name] = ret

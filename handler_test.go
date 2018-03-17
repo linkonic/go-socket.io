@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"io"
 	"github.com/googollee/go-engine.io"
+	"log"
 )
 
 type FakeBroadcastAdaptor struct{}
@@ -81,7 +82,7 @@ func TestHandler(t *testing.T) {
 	Convey("Call ACK handler by ACK id received from client", t, func() {
 		saver := &FrameSaver{}
 		var handlerCalled bool
-		baseHandlerInstance := newBaseHandler("some:event", &FakeBroadcastAdaptor{})
+		baseHandlerInstance := newBaseHandler("some:event", &FakeBroadcastAdaptor{}, func(message string, content interface{}) { log.Printf("Processing packet %s: %s", message, content) })
 		socketInstance := newSocket(&FakeSockConnection{}, baseHandlerInstance)
 		c, _ := newCaller(func() { handlerCalled = true })
 
@@ -95,7 +96,7 @@ func TestHandler(t *testing.T) {
 	Convey("Call BINARY ACK handler by BINARY ACK id received from client", t, func() {
 		saver := &FrameSaver{}
 		var handlerCalled bool
-		baseHandlerInstance := newBaseHandler("some:event", &FakeBroadcastAdaptor{})
+		baseHandlerInstance := newBaseHandler("some:event", &FakeBroadcastAdaptor{}, func(message string, content interface{}) { log.Printf("Processing packet %s: %s", message, content) })
 		socketInstance := newSocket(&FakeSockConnection{}, baseHandlerInstance)
 		c, _ := newCaller(func() { handlerCalled = true })
 

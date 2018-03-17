@@ -11,13 +11,15 @@ type baseHandler struct {
 	name      string
 	broadcast BroadcastAdaptor
 	evMu      sync.Mutex
+	logger    LogMessage
 }
 
-func newBaseHandler(name string, broadcast BroadcastAdaptor) *baseHandler {
+func newBaseHandler(name string, broadcast BroadcastAdaptor, logger LogMessage) *baseHandler {
 	return &baseHandler{
 		events:    make(map[string]*caller),
 		name:      name,
 		broadcast: broadcast,
+		logger:    logger,
 		evMu:      sync.Mutex{},
 	}
 }
@@ -39,6 +41,7 @@ type socketHandler struct {
 	acksmu sync.Mutex
 	acks   map[int]*caller
 	socket *socket
+	logger LogMessage
 	rooms  map[string]struct{}
 }
 
@@ -58,6 +61,7 @@ func newSocketHandler(s *socket, base *baseHandler) *socketHandler {
 		acks:   make(map[int]*caller),
 		socket: s,
 		rooms:  make(map[string]struct{}),
+		logger: base.logger,
 	}
 }
 
